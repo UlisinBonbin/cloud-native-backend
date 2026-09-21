@@ -3,6 +3,7 @@ package com.peluchin.bff_service.client;
 import com.peluchin.bff_service.dto.UsuarioRequest;
 import com.peluchin.bff_service.dto.UsuarioResponse;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -13,10 +14,12 @@ public class UsuarioClient {
 
     public UsuarioClient(
             RestClient.Builder builder,
+            ClientHttpRequestInterceptor bearerTokenInterceptor,
             @Value("${usuario-service.url}") String usuarioServiceUrl) {
 
         this.restClient = builder
                 .baseUrl(usuarioServiceUrl)
+                .requestInterceptor(bearerTokenInterceptor)
                 .build();
     }
 
@@ -28,7 +31,8 @@ public class UsuarioClient {
                 .body(UsuarioResponse.class);
     }
 
-    public UsuarioResponse crearUsuario(UsuarioRequest request) {
+    public UsuarioResponse crearUsuario(
+            UsuarioRequest request) {
 
         return restClient.post()
                 .uri("/api/v1/usuarios/me")
@@ -37,7 +41,8 @@ public class UsuarioClient {
                 .body(UsuarioResponse.class);
     }
 
-    public UsuarioResponse actualizarUsuario(UsuarioRequest request) {
+    public UsuarioResponse actualizarUsuario(
+            UsuarioRequest request) {
 
         return restClient.put()
                 .uri("/api/v1/usuarios/me")

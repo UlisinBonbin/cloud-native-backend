@@ -2,6 +2,8 @@ package com.peluchin.bff_service.client;
 
 import com.peluchin.bff_service.dto.ProductoResponse;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -14,10 +16,12 @@ public class ProductoClient {
 
     public ProductoClient(
             RestClient.Builder builder,
+            ClientHttpRequestInterceptor bearerTokenInterceptor,
             @Value("${producto-service.url}") String productoServiceUrl) {
 
         this.restClient = builder
                 .baseUrl(productoServiceUrl)
+                .requestInterceptor(bearerTokenInterceptor)
                 .build();
     }
 
@@ -26,7 +30,7 @@ public class ProductoClient {
         return restClient.get()
                 .uri("/api/v1/productos")
                 .retrieve()
-                .body(new org.springframework.core.ParameterizedTypeReference<>() {});
+                .body(new ParameterizedTypeReference<>() {});
     }
 
     public ProductoResponse obtenerProducto(Long id) {

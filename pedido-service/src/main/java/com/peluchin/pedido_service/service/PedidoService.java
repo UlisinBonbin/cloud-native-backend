@@ -9,6 +9,7 @@ import com.peluchin.pedido_service.model.PedidoItem;
 import com.peluchin.pedido_service.repository.PedidoRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -43,7 +44,10 @@ public class PedidoService {
                 .orElseGet(() -> {
 
                     Pedido pedido = new Pedido();
+
                     pedido.setUsuarioSub(usuarioSub);
+                    pedido.setEstado(EstadoPedido.CARRITO);
+                    pedido.setFechaCreacion(LocalDateTime.now());
 
                     return pedidoRepository.save(pedido);
                 });
