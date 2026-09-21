@@ -2,7 +2,6 @@ package com.peluchin.pedido_service.controller;
 
 import com.peluchin.pedido_service.dto.AgregarProductoRequest;
 import com.peluchin.pedido_service.model.Pedido;
-import com.peluchin.pedido_service.model.PedidoItem;
 import com.peluchin.pedido_service.service.PedidoService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
