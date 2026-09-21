@@ -1,5 +1,6 @@
 package com.peluchin.usuario_service.model;
 
+import com.peluchin.usuario_service.enums.Rol;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -25,4 +26,7 @@ public class Usuario {
     @Column(nullable = false, unique = true)
     private String email;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Rol rol;
 }
