@@ -23,7 +23,7 @@ public class Producto {
     @Column (nullable = false)
     private BigDecimal precio;
 
-    @Column (nullable = false)
+    @Column (nullable = false, length = 2048)
     private String imagenUrl;
 
     @Column (nullable = false)
