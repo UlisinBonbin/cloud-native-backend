@@ -2,7 +2,7 @@
 <project version="4">
   <component name="CompilerConfiguration">
     <annotationProcessing>
-      <profile name="Annotation profile for bff-service" enabled="true">
+      <profile name="Annotation profile for pedido-service" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
@@ -10,8 +10,8 @@
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.46/lombok-1.18.46.jar" />
         </processorPath>
         <module name="usuario-service" />
-        <module name="producto-service" />
         <module name="pedido-service" />
+        <module name="producto-service" />
         <module name="bff-service" />
       </profile>
     </annotationProcessing>
