@@ -5,7 +5,7 @@ import com.peluchin.bff_service.dto.PedidoResponse;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/pedidos")
+@RequestMapping("/api/v1/pedidos")
 
 public class PedidoController {
 

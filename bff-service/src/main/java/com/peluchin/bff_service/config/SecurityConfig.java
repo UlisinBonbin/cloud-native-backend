@@ -20,8 +20,8 @@ public class SecurityConfig {
                         // Catálogo público
                         .requestMatchers(
                                 HttpMethod.GET,
-                                "/api/productos",
-                                "/api/productos/**"
+                                "/api/v1/productos",
+                                "/api/v1/productos/**"
                         ).permitAll()
 
                         // Todo lo demás requiere autenticación
