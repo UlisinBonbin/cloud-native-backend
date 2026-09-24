@@ -1,5 +1,6 @@
 package com.peluchin.bff_service.client;
 
+import com.peluchin.bff_service.dto.ProductoRequest;
 import com.peluchin.bff_service.dto.ProductoResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -39,6 +40,34 @@ public class ProductoClient {
                 .uri("/api/v1/productos/{id}", id)
                 .retrieve()
                 .body(ProductoResponse.class);
+    }
+
+    public ProductoResponse crearProducto(ProductoRequest producto) {
+
+        return restClient.post()
+                .uri("/api/v1/productos")
+                .body(producto)
+                .retrieve()
+                .body(ProductoResponse.class);
+    }
+
+    public ProductoResponse actualizarProducto(
+            Long id,
+            ProductoRequest producto) {
+
+        return restClient.put()
+                .uri("/api/v1/productos/{id}", id)
+                .body(producto)
+                .retrieve()
+                .body(ProductoResponse.class);
+    }
+
+    public void eliminarProducto(Long id) {
+
+        restClient.delete()
+                .uri("/api/v1/productos/{id}", id)
+                .retrieve()
+                .toBodilessEntity();
     }
 
 }
