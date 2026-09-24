@@ -21,19 +21,30 @@ public class UsuarioController {
     public Usuario getUsuarioActual(
             @AuthenticationPrincipal Jwt jwt) {
 
-        return usuarioService.getUsuarioActual(
-                jwt.getSubject()
-        );
-    }
+        String cognitoSub = jwt.getSubject();
 
-    @PostMapping("/me")
-    public Usuario crearUsuario(
-            @RequestBody UsuarioRequest request,
-            @AuthenticationPrincipal Jwt jwt) {
+        String email = jwt.getClaimAsString("email");
+        if (email == null) {
+            email = jwt.getClaimAsString("preferred_username");
+        }
 
-        return usuarioService.crearUsuario(
-                jwt.getSubject(),
-                request
+        String nombre = jwt.getClaimAsString("name");
+        if (nombre == null) {
+            nombre = jwt.getClaimAsString("preferred_username");
+        }
+
+        if (nombre == null) {
+            nombre = "Usuario";
+        }
+
+        if (email == null) {
+            email = cognitoSub;
+        }
+
+        return usuarioService.obtenerOCrearUsuario(
+                cognitoSub,
+                email,
+                nombre
         );
     }
 
@@ -44,8 +55,8 @@ public class UsuarioController {
 
         return usuarioService.actualizarUsuario(
                 jwt.getSubject(),
-                request
+                request.getEmail(),
+                request.getNombre()
         );
     }
-
 }

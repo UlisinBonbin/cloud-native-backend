@@ -1,6 +1,7 @@
 package com.peluchin.usuario_service.service;
 
 import com.peluchin.usuario_service.dto.UsuarioRequest;
+import com.peluchin.usuario_service.enums.Rol;
 import com.peluchin.usuario_service.model.Usuario;
 import com.peluchin.usuario_service.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
@@ -14,36 +15,37 @@ public class UsuarioService {
         this.usuarioRepository = usuarioRepository;
     }
 
-    public Usuario getUsuarioActual(String cognitoSub) {
+    public Usuario obtenerOCrearUsuario(
+            String cognitoSub,
+            String email,
+            String nombre) {
 
         return usuarioRepository
                 .findByCognitoSub(cognitoSub)
-                .orElse(null);
-    }
+                .orElseGet(() -> {
 
-    public Usuario crearUsuario(
-            String cognitoSub,
-            UsuarioRequest request) {
+                    Usuario usuario = new Usuario();
 
-        Usuario usuario = new Usuario();
+                    usuario.setCognitoSub(cognitoSub);
+                    usuario.setEmail(email);
+                    usuario.setNombre(nombre);
+                    usuario.setRol(Rol.USUARIO);
 
-        usuario.setCognitoSub(cognitoSub);
-        usuario.setNombre(request.getNombre());
-        usuario.setEmail(request.getEmail());
-
-        return usuarioRepository.save(usuario);
+                    return usuarioRepository.save(usuario);
+                });
     }
 
     public Usuario actualizarUsuario(
             String cognitoSub,
-            UsuarioRequest request) {
+            String email,
+            String nombre) {
 
         return usuarioRepository
                 .findByCognitoSub(cognitoSub)
                 .map(usuario -> {
 
-                    usuario.setNombre(request.getNombre());
-                    usuario.setEmail(request.getEmail());
+                    usuario.setNombre(nombre);
+                    usuario.setEmail(email);
 
                     return usuarioRepository.save(usuario);
                 })
