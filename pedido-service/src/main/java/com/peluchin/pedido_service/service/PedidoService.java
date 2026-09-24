@@ -78,24 +78,55 @@ public class PedidoService {
             );
         }
 
-        if (producto.getStock() < request.getCantidad()) {
-            throw new RuntimeException(
-                    "No hay suficiente stock"
-            );
-        }
-
         Pedido carrito =
                 getCarritoByUsuario(usuarioSub);
 
-        PedidoItem item = new PedidoItem();
+        // Buscar si el producto ya existe en el carrito
+        PedidoItem itemExistente = carrito.getItems()
+                .stream()
+                .filter(item ->
+                        item.getProductoId()
+                                .equals(producto.getId())
+                )
+                .findFirst()
+                .orElse(null);
 
-        item.setPedido(carrito);
-        item.setProductoId(producto.getId());
-        item.setNombreProducto(producto.getNombre());
-        item.setPrecioUnitario(producto.getPrecio());
-        item.setCantidad(request.getCantidad());
+        if (itemExistente != null) {
 
-        carrito.getItems().add(item);
+            // El producto ya existe:
+            // aumentamos la cantidad
+            int nuevaCantidad =
+                    itemExistente.getCantidad()
+                            + request.getCantidad();
+
+            // Validar el stock total acumulado
+            if (nuevaCantidad > producto.getStock()) {
+                throw new RuntimeException(
+                        "No hay suficiente stock"
+                );
+            }
+
+            itemExistente.setCantidad(nuevaCantidad);
+
+        } else {
+
+            // Producto nuevo en el carrito
+            if (request.getCantidad() > producto.getStock()) {
+                throw new RuntimeException(
+                        "No hay suficiente stock"
+                );
+            }
+
+            PedidoItem nuevoItem = new PedidoItem();
+
+            nuevoItem.setPedido(carrito);
+            nuevoItem.setProductoId(producto.getId());
+            nuevoItem.setNombreProducto(producto.getNombre());
+            nuevoItem.setPrecioUnitario(producto.getPrecio());
+            nuevoItem.setCantidad(request.getCantidad());
+
+            carrito.getItems().add(nuevoItem);
+        }
 
         return pedidoRepository.save(carrito);
     }
