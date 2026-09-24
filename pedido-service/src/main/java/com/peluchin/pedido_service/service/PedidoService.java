@@ -7,6 +7,7 @@ import com.peluchin.pedido_service.enums.EstadoPedido;
 import com.peluchin.pedido_service.model.Pedido;
 import com.peluchin.pedido_service.model.PedidoItem;
 import com.peluchin.pedido_service.repository.PedidoRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -53,6 +54,7 @@ public class PedidoService {
                 });
     }
 
+    @Transactional
     public Pedido agregarProductoAlCarrito(
             String usuarioSub,
             AgregarProductoRequest request,
@@ -81,7 +83,6 @@ public class PedidoService {
         Pedido carrito =
                 getCarritoByUsuario(usuarioSub);
 
-        // Buscar si el producto ya existe en el carrito
         PedidoItem itemExistente = carrito.getItems()
                 .stream()
                 .filter(item ->
@@ -93,13 +94,10 @@ public class PedidoService {
 
         if (itemExistente != null) {
 
-            // El producto ya existe:
-            // aumentamos la cantidad
             int nuevaCantidad =
                     itemExistente.getCantidad()
                             + request.getCantidad();
 
-            // Validar el stock total acumulado
             if (nuevaCantidad > producto.getStock()) {
                 throw new RuntimeException(
                         "No hay suficiente stock"
@@ -110,7 +108,6 @@ public class PedidoService {
 
         } else {
 
-            // Producto nuevo en el carrito
             if (request.getCantidad() > producto.getStock()) {
                 throw new RuntimeException(
                         "No hay suficiente stock"
@@ -127,6 +124,128 @@ public class PedidoService {
 
             carrito.getItems().add(nuevoItem);
         }
+
+        return pedidoRepository.save(carrito);
+    }
+
+    @Transactional
+    public Pedido actualizarCantidadProducto(
+            String usuarioSub,
+            Long productoId,
+            Integer cantidad,
+            String token) {
+
+        if (cantidad == null || cantidad <= 0) {
+            throw new IllegalArgumentException(
+                    "La cantidad debe ser mayor que 0"
+            );
+        }
+
+        Pedido carrito = getCarritoByUsuario(usuarioSub);
+
+        PedidoItem item = carrito.getItems()
+                .stream()
+                .filter(i ->
+                        i.getProductoId().equals(productoId)
+                )
+                .findFirst()
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "El producto no está en el carrito"
+                        )
+                );
+
+        ProductoResponse producto =
+                productoClient.getProductoById(
+                        productoId,
+                        token
+                );
+
+        if (producto == null) {
+            throw new RuntimeException(
+                    "Producto no encontrado"
+            );
+        }
+
+        if (cantidad > producto.getStock()) {
+            throw new RuntimeException(
+                    "No hay suficiente stock"
+            );
+        }
+
+        item.setCantidad(cantidad);
+
+        return pedidoRepository.save(carrito);
+    }
+
+    @Transactional
+    public Pedido eliminarProductoDelCarrito(
+            String usuarioSub,
+            Long productoId) {
+
+        Pedido carrito = getCarritoByUsuario(usuarioSub);
+
+        boolean eliminado = carrito.getItems()
+                .removeIf(item ->
+                        item.getProductoId().equals(productoId)
+                );
+
+        if (!eliminado) {
+            throw new RuntimeException(
+                    "El producto no está en el carrito"
+            );
+        }
+
+        return pedidoRepository.save(carrito);
+    }
+
+    @Transactional
+    public Pedido comprarCarrito(
+            String usuarioSub,
+            String token) {
+
+        Pedido carrito = pedidoRepository
+                .findByUsuarioSubAndEstado(
+                        usuarioSub,
+                        EstadoPedido.CARRITO
+                )
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "No existe un carrito"
+                        )
+                );
+
+        if (carrito.getItems().isEmpty()) {
+            throw new RuntimeException(
+                    "El carrito está vacío"
+            );
+        }
+
+        // Volvemos a comprobar el stock antes de comprar.
+        for (PedidoItem item : carrito.getItems()) {
+
+            ProductoResponse producto =
+                    productoClient.getProductoById(
+                            item.getProductoId(),
+                            token
+                    );
+
+            if (producto == null) {
+                throw new RuntimeException(
+                        "Producto no encontrado: "
+                                + item.getProductoId()
+                );
+            }
+
+            if (item.getCantidad() > producto.getStock()) {
+                throw new RuntimeException(
+                        "Stock insuficiente para: "
+                                + item.getNombreProducto()
+                );
+            }
+        }
+
+        carrito.setEstado(EstadoPedido.PAGADO);
 
         return pedidoRepository.save(carrito);
     }

@@ -27,4 +27,27 @@ public class PedidoController {
         return pedidoClient.agregarProducto(request);
     }
 
+    @PutMapping("/carrito/productos/{productoId}")
+    public PedidoResponse actualizarCantidad(
+            @PathVariable Long productoId,
+            @RequestBody AgregarProductoRequest request) {
+
+        return pedidoClient.actualizarCantidad(
+                productoId,
+                request
+        );
+    }
+
+    @DeleteMapping("/carrito/productos/{productoId}")
+    public PedidoResponse eliminarProducto(
+            @PathVariable Long productoId) {
+
+        return pedidoClient.eliminarProducto(productoId);
+    }
+
+    @PostMapping("/carrito/comprar")
+    public PedidoResponse comprarCarrito() {
+        return pedidoClient.comprarCarrito();
+    }
+
 }

@@ -40,4 +40,38 @@ public class PedidoClient {
                 .body(PedidoResponse.class);
     }
 
+    public PedidoResponse actualizarCantidad(
+            Long productoId,
+            AgregarProductoRequest request) {
+
+        return restClient.put()
+                .uri(
+                        "/api/v1/pedidos/carrito/productos/{productoId}",
+                        productoId
+                )
+                .body(request)
+                .retrieve()
+                .body(PedidoResponse.class);
+    }
+
+    public PedidoResponse eliminarProducto(
+            Long productoId) {
+
+        return restClient.delete()
+                .uri(
+                        "/api/v1/pedidos/carrito/productos/{productoId}",
+                        productoId
+                )
+                .retrieve()
+                .body(PedidoResponse.class);
+    }
+
+    public PedidoResponse comprarCarrito() {
+
+        return restClient.post()
+                .uri("/api/v1/pedidos/carrito/comprar")
+                .retrieve()
+                .body(PedidoResponse.class);
+    }
+
 }

@@ -38,4 +38,39 @@ public class PedidoController {
         );
     }
 
+    @PutMapping("/carrito/productos/{productoId}")
+    public Pedido actualizarCantidad(
+            @PathVariable Long productoId,
+            @RequestBody AgregarProductoRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        return pedidoService.actualizarCantidadProducto(
+                jwt.getSubject(),
+                productoId,
+                request.getCantidad(),
+                jwt.getTokenValue()
+        );
+    }
+
+    @DeleteMapping("/carrito/productos/{productoId}")
+    public Pedido eliminarProducto(
+            @PathVariable Long productoId,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        return pedidoService.eliminarProductoDelCarrito(
+                jwt.getSubject(),
+                productoId
+        );
+    }
+
+    @PostMapping("/carrito/comprar")
+    public Pedido comprarCarrito(
+            @AuthenticationPrincipal Jwt jwt) {
+
+        return pedidoService.comprarCarrito(
+                jwt.getSubject(),
+                jwt.getTokenValue()
+        );
+    }
+
 }
