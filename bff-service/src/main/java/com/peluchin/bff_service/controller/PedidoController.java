@@ -4,6 +4,8 @@ import com.peluchin.bff_service.dto.AgregarProductoRequest;
 import com.peluchin.bff_service.dto.PedidoResponse;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/pedidos")
 
@@ -48,6 +50,12 @@ public class PedidoController {
     @PostMapping("/carrito/comprar")
     public PedidoResponse comprarCarrito() {
         return pedidoClient.comprarCarrito();
+    }
+
+    @GetMapping("/mis-pedidos")
+    public List<PedidoResponse> obtenerMisPedidos() {
+
+        return pedidoClient.obtenerMisPedidos();
     }
 
 }

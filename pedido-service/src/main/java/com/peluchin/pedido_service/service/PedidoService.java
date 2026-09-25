@@ -260,5 +260,15 @@ public class PedidoService {
 
         return pedidoRepository.save(carrito);
     }
+
+    public List<Pedido> getPedidosByUsuario(String usuarioSub) {
+
+        return pedidoRepository
+                .findByUsuarioSubAndEstadoNotOrderByFechaCreacionDesc(
+                        usuarioSub,
+                        EstadoPedido.CARRITO
+                );
+    }
+
 }
 

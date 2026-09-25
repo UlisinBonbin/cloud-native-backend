@@ -2,9 +2,12 @@ package com.peluchin.bff_service.client;
 import com.peluchin.bff_service.dto.AgregarProductoRequest;
 import com.peluchin.bff_service.dto.PedidoResponse;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+
+import java.util.List;
 
 @Component
 public class PedidoClient {
@@ -72,6 +75,14 @@ public class PedidoClient {
                 .uri("/api/v1/pedidos/carrito/comprar")
                 .retrieve()
                 .body(PedidoResponse.class);
+    }
+
+    public List<PedidoResponse> obtenerMisPedidos() {
+
+        return restClient.get()
+                .uri("/api/v1/pedidos/mis-pedidos")
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() {});
     }
 
 }
