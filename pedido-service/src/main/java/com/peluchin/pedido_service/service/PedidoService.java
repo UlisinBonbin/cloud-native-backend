@@ -37,21 +37,22 @@ public class PedidoService {
 
     public Pedido getCarritoByUsuario(String usuarioSub) {
 
-        return pedidoRepository
-                .findByUsuarioSubAndEstado(
+        List<Pedido> carritos =
+                pedidoRepository.findByUsuarioSubAndEstadoOrderByIdDesc(
                         usuarioSub,
                         EstadoPedido.CARRITO
-                )
-                .orElseGet(() -> {
+                );
 
-                    Pedido pedido = new Pedido();
+        if (!carritos.isEmpty()) {
+            return carritos.get(0);
+        }
 
-                    pedido.setUsuarioSub(usuarioSub);
-                    pedido.setEstado(EstadoPedido.CARRITO);
-                    pedido.setFechaCreacion(LocalDateTime.now());
+        Pedido pedido = new Pedido();
+        pedido.setUsuarioSub(usuarioSub);
+        pedido.setEstado(EstadoPedido.CARRITO);
+        pedido.setFechaCreacion(LocalDateTime.now());
 
-                    return pedidoRepository.save(pedido);
-                });
+        return pedidoRepository.save(pedido);
     }
 
     @Transactional
@@ -80,8 +81,7 @@ public class PedidoService {
             );
         }
 
-        Pedido carrito =
-                getCarritoByUsuario(usuarioSub);
+        Pedido carrito = getCarritoByUsuario(usuarioSub);
 
         PedidoItem itemExistente = carrito.getItems()
                 .stream()
@@ -204,16 +204,8 @@ public class PedidoService {
             String usuarioSub,
             String token) {
 
-        Pedido carrito = pedidoRepository
-                .findByUsuarioSubAndEstado(
-                        usuarioSub,
-                        EstadoPedido.CARRITO
-                )
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "No existe un carrito"
-                        )
-                );
+        // Usamos el mismo método que obtiene el carrito actual
+        Pedido carrito = getCarritoByUsuario(usuarioSub);
 
         if (carrito.getItems().isEmpty()) {
             throw new RuntimeException(

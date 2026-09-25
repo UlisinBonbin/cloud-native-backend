@@ -8,10 +8,9 @@ import java.util.List;
 import java.util.Optional;
 
 public interface PedidoRepository extends JpaRepository<Pedido, Long> {
-    Optional<Pedido> findByUsuarioSubAndEstado(
+    List<Pedido> findByUsuarioSubAndEstadoOrderByIdDesc(
             String usuarioSub,
             EstadoPedido estado
-
     );
 
     List<Pedido> findByUsuarioSubAndEstadoNotOrderByFechaCreacionDesc(
