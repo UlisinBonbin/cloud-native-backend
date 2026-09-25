@@ -262,5 +262,35 @@ public class PedidoService {
                 );
     }
 
+    @Transactional
+    public Pedido cambiarEstadoPedido(
+            Long id,
+            EstadoPedido nuevoEstado) {
+
+        Pedido pedido = pedidoRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Pedido no encontrado"
+                        )
+                );
+
+        if (nuevoEstado == null) {
+            throw new IllegalArgumentException(
+                    "El estado no puede ser nulo"
+            );
+        }
+
+        if (nuevoEstado == EstadoPedido.CARRITO) {
+            throw new IllegalArgumentException(
+                    "Un operador no puede cambiar un pedido a CARRITO"
+            );
+        }
+
+        pedido.setEstado(nuevoEstado);
+
+        return pedidoRepository.save(pedido);
+    }
+
+
 }
 

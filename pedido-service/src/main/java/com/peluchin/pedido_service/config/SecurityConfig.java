@@ -2,6 +2,7 @@ package com.peluchin.pedido_service.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
@@ -14,7 +15,9 @@ public class SecurityConfig {
 
     public SecurityConfig(
             CognitoJwtAuthenticationConverter jwtAuthenticationConverter) {
-        this.jwtAuthenticationConverter = jwtAuthenticationConverter;
+
+        this.jwtAuthenticationConverter =
+                jwtAuthenticationConverter;
     }
 
     @Bean
@@ -26,10 +29,27 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
 
-                        // Todo lo relacionado con pedidos/carrito
-                        // requiere que el usuario haya iniciado sesión.
-                        .requestMatchers("/api/v1/pedidos/**")
-                        .authenticated()
+                        // Carrito y pedidos propios
+                        .requestMatchers(
+                                "/api/v1/pedidos/carrito/**"
+                        ).authenticated()
+
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/v1/pedidos/mis-pedidos"
+                        ).authenticated()
+
+                        // Gestión completa de pedidos
+                        // SOLO OPERADOR
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/v1/pedidos"
+                        ).hasRole("OPERADOR")
+
+                        .requestMatchers(
+                                HttpMethod.PUT,
+                                "/api/v1/pedidos/*/estado"
+                        ).hasRole("OPERADOR")
 
                         .anyRequest().authenticated()
                 )

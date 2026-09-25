@@ -1,6 +1,7 @@
 package com.peluchin.pedido_service.controller;
 
 import com.peluchin.pedido_service.dto.AgregarProductoRequest;
+import com.peluchin.pedido_service.dto.CambiarEstadoRequest;
 import com.peluchin.pedido_service.model.Pedido;
 import com.peluchin.pedido_service.service.PedidoService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -17,6 +18,22 @@ public class PedidoController {
 
     public PedidoController(PedidoService pedidoService) {
         this.pedidoService = pedidoService;
+    }
+
+    @GetMapping
+    public List<Pedido> obtenerTodosLosPedidos() {
+        return pedidoService.getAllPedidos();
+    }
+
+    @PutMapping("/{id}/estado")
+    public Pedido cambiarEstado(
+            @PathVariable Long id,
+            @RequestBody CambiarEstadoRequest request) {
+
+        return pedidoService.cambiarEstadoPedido(
+                id,
+                request.getEstado()
+        );
     }
 
     @GetMapping("/carrito")

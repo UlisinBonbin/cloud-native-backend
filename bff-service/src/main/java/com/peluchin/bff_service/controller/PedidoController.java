@@ -1,6 +1,7 @@
 package com.peluchin.bff_service.controller;
 import com.peluchin.bff_service.client.PedidoClient;
 import com.peluchin.bff_service.dto.AgregarProductoRequest;
+import com.peluchin.bff_service.dto.CambiarEstadoRequest;
 import com.peluchin.bff_service.dto.PedidoResponse;
 import org.springframework.web.bind.annotation.*;
 
@@ -57,5 +58,22 @@ public class PedidoController {
 
         return pedidoClient.obtenerMisPedidos();
     }
+    @GetMapping
+    public List<PedidoResponse> obtenerTodosLosPedidos() {
+        return pedidoClient.obtenerTodosLosPedidos();
+    }
+
+    @PutMapping("/{id}/estado")
+    public PedidoResponse cambiarEstado(
+            @PathVariable Long id,
+            @RequestBody CambiarEstadoRequest request) {
+
+        return pedidoClient.cambiarEstado(
+                id,
+                request.getEstado()
+        );
+    }
+
+
 
 }

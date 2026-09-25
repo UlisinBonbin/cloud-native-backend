@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class PedidoClient {
@@ -82,7 +83,35 @@ public class PedidoClient {
         return restClient.get()
                 .uri("/api/v1/pedidos/mis-pedidos")
                 .retrieve()
-                .body(new ParameterizedTypeReference<>() {});
+                .body(
+                        new ParameterizedTypeReference<List<PedidoResponse>>() {}
+                );
+    }
+
+    public List<PedidoResponse> obtenerTodosLosPedidos() {
+
+        return restClient.get()
+                .uri("/api/v1/pedidos")
+                .retrieve()
+                .body(
+                        new ParameterizedTypeReference<List<PedidoResponse>>() {}
+                );
+    }
+
+    public PedidoResponse cambiarEstado(
+            Long pedidoId,
+            String estado) {
+
+        return restClient.put()
+                .uri(
+                        "/api/v1/pedidos/{id}/estado",
+                        pedidoId
+                )
+                .body(
+                        Map.of("estado", estado)
+                )
+                .retrieve()
+                .body(PedidoResponse.class);
     }
 
 }
