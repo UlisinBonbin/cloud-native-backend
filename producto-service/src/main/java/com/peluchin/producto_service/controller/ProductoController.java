@@ -5,6 +5,7 @@ import com.peluchin.producto_service.service.ProductoService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/productos")
@@ -32,6 +33,20 @@ public class ProductoController {
     @PutMapping("/{id}")
     public Producto updateProducto(@PathVariable Long id, @RequestBody Producto producto){
         return productoService.updateProducto(id, producto);
+    }
+
+
+    @PostMapping("/{id}/stock")
+    public Producto descontarStock(
+            @PathVariable Long id,
+            @RequestBody Map<String, Integer> request) {
+
+        Integer cantidad = request.get("cantidad");
+
+        return productoService.descontarStock(
+                id,
+                cantidad
+        );
     }
 
     @DeleteMapping("/{id}")

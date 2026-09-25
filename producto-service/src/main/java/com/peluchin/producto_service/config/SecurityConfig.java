@@ -31,6 +31,12 @@ public class SecurityConfig {
                                 "/api/v1/productos/**"
                         ).permitAll()
 
+                        // Descuento interno de stock
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/v1/productos/*/stock"
+                        ).authenticated()
+
                         // Solo administrador
                         .requestMatchers(
                                 HttpMethod.POST,
