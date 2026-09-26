@@ -156,10 +156,10 @@ Esto permite validar nuevamente firma, issuer, audience y vigencia del token.
 
 Cada microservicio también es un OAuth2 Resource Server y aplica reglas de autorización por rol:
 
-```java
+
 .hasRole("ADMINISTRADOR")
 .hasRole("OPERADOR")
-```
+
 
 Los grupos de Cognito se transforman en *authorities* mediante un `CognitoJwtAuthenticationConverter`:
 
