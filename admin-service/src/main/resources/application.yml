@@ -1,0 +1,30 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: admin-service
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+
+# ==============================================================================
+# INDICADOR 1: Configuración centralizada de RabbitMQ para Peluchitos Bonbin
+# Define de forma centralizada nombres de colas, exchanges y routing keys/bindings
+# ==============================================================================
+rabbitmq:
+  exchange:
+    name: peluchitos.exchange
+    dlx: peluchitos.dlx
+  queues:
+    pedido-pagado: pedido.pagado.queue
+    pedido-pagado-dlq: pedido.pagado.dlq
+    pedido-cancelado: pedido.cancelado.queue
+    pedido-cancelado-dlq: pedido.cancelado.dlq
+  routing-keys:
+    pedido-pagado: pedido.pagado.key
+    pedido-pagado-dlq: pedido.pagado.dlq.key
+    pedido-cancelado: pedido.cancelado.key
+    pedido-cancelado-dlq: pedido.cancelado.dlq.key

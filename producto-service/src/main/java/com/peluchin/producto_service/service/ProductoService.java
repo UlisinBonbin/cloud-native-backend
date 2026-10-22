@@ -70,4 +70,16 @@ public class ProductoService {
         return productoRepository.save(producto);
     }
 
+    public Producto reponerStock(Long id, Integer cantidad) {
+        if (cantidad == null || cantidad <= 0) {
+            throw new IllegalArgumentException("La cantidad debe ser mayor que 0");
+        }
+
+        Producto producto = productoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Producto no encontrado: " + id));
+
+        producto.setStock(producto.getStock() + cantidad);
+        return productoRepository.save(producto);
+    }
+
 }

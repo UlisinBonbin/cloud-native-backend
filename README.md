@@ -1,4 +1,4 @@
-# 🧸 Peluchitos Bonbin — Backend
+﻿# 🧸 Peluchitos Bonbin — Backend
 
 Backend de **Peluchitos Bonbin**, desarrollado con **Spring Boot** bajo una arquitectura de microservicios con patrón **BFF (Backend for Frontend)**.
 
@@ -112,6 +112,14 @@ Intermediario entre React y los microservicios.
 **Responsabilidades:**
 - Obtener y actualizar información del usuario autenticado
 - Vincular usuarios mediante el `cognitoSub`
+
+### 🛠️ admin-service — `:8084`
+
+**Responsabilidades:**
+- Microservicio administrador de mensajería (RabbitMQ).
+- Exponer API REST para administración de colas (`/queues`), exchanges (`/exchanges`) y bindings (`/bindings`).
+- Encapsular la lógica en `RabbitAdminService`.
+- Validar parámetros de entrada mediante DTOs y Bean Validation.
 
 ---
 
@@ -337,6 +345,80 @@ java -jar target/*.jar
 | producto-service   | 8081   |
 | usuario-service    | 8082   |
 | pedido-service     | 8083   |
+| admin-service      | 8084   |
+
+---
+
+## 🐰 Mensajería Asíncrona (RabbitMQ)
+
+Se implementa una arquitectura orientada a eventos con **RabbitMQ**, cumpliendo con la pauta de evaluación:
+
+### 1. Configuración Centralizada (`application.yml`)
+Todas las colas, exchanges y routing keys se definen de forma estandarizada en `application.yml` y clases `@Configuration` (`RabbitMQConfig`):
+- **Exchange principal**: `peluchitos.exchange` (TopicExchange)
+- **Dead Letter Exchange (DLX)**: `peluchitos.dlx` (DirectExchange)
+- **Caso 1: Pedido Pagado**:
+  - Cola: `pedido.pagado.queue` (con DLQ configurada)
+  - DLQ: `pedido.pagado.dlq`
+  - Routing Key: `pedido.pagado.key`
+  - Routing Key DLQ: `pedido.pagado.dlq.key`
+- **Caso 2: Pedido Cancelado**:
+  - Cola: `pedido.cancelado.queue` (con DLQ configurada)
+  - DLQ: `pedido.cancelado.dlq`
+  - Routing Key: `pedido.cancelado.key`
+  - Routing Key DLQ: `pedido.cancelado.dlq.key`
+
+### 2. Consumidores por Dominio y Confirmación Explícita (ACK / DLQ)
+En `producto-service`:
+- Paquete: `com.peluchin.producto_service.consumer`
+- Consumidor: `InventarioConsumer` implementado con `@RabbitListener` en el contenedor `AcknowledgeMode.MANUAL`.
+- Confirmación de éxito: `channel.basicAck(deliveryTag, false)`.
+- Manejo explícito de errores: Ante datos inválidos o fallos de stock, se rechaza con `channel.basicNack(deliveryTag, false, false)` sin requeue para dirigir el mensaje a la cola de letras muertas (**DLQ**).
+- Consumidor de auditoría: `InventarioDlqConsumer` monitorea los mensajes fallidos en la DLQ.
+
+### 3. API REST del Microservicio Administrador (`admin-service` — :8084)
+La lógica está encapsulada en `RabbitAdminService` y los endpoints cuentan con validación de parámetros (Bean Validation):
+- `POST /queues` o `/api/v1/admin/queues`: Crear cola con configuración (durable, exclusivo, DLQ).
+- `GET /queues/{name}` o `/api/v1/admin/queues/{name}`: Consultar información y conteo de mensajes de una cola.
+- `DELETE /queues/{name}` o `/api/v1/admin/queues/{name}`: Eliminar cola.
+- `POST /queues/{name}/purge`: Purgar mensajes de una cola.
+- `POST /exchanges`: Crear exchange (`direct`, `topic`, `fanout`, `headers`).
+- `DELETE /exchanges/{name}`: Eliminar exchange.
+- `POST /bindings`: Crear binding entre cola y exchange.
+- `DELETE /bindings`: Eliminar binding.
+
+---
+
+## 🐳 Docker y Docker Compose
+
+El proyecto cuenta con contenedorización completa para desarrollo local y despliegues en AWS EC2:
+
+### Estructura de archivos Docker
+- **`docker-compose.yml`**: A nivel de raíz, orquesta RabbitMQ y todos los microservicios.
+- **`Dockerfile`**: Ubicado dentro de cada microservicio (`bff-service`, `producto-service`, `pedido-service`, `usuario-service`, `admin-service`), con compilación multi-stage basada en `eclipse-temurin:21` y ejecución con usuario no-root por seguridad.
+
+### Opciones de ejecución con Docker
+
+#### Opción A: Levantar únicamente RabbitMQ (Broker)
+Si deseas ejecutar los microservicios directamente con `./mvnw spring-boot:run` o desde el IDE:
+`ash
+docker compose up -d rabbitmq
+`
+- Consola Web de RabbitMQ: http://localhost:15672 (Usuario: guest / Clave: guest)
+- Broker AMQP: localhost:5672
+
+#### Opción B: Levantar todo el ecosistema (RabbitMQ + 5 Microservicios)
+1. Configura tus variables en un archivo .env basándote en .env.example
+2. Compila y levanta todos los contenedores:
+`ash
+docker compose up -d --build
+`
+
+#### Detener los contenedores
+`ash
+docker compose down
+`
+
 
 ---
 

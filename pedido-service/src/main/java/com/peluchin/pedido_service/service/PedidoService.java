@@ -4,26 +4,34 @@ import com.peluchin.pedido_service.client.ProductoClient;
 import com.peluchin.pedido_service.dto.AgregarProductoRequest;
 import com.peluchin.pedido_service.dto.ProductoResponse;
 import com.peluchin.pedido_service.enums.EstadoPedido;
+import com.peluchin.pedido_service.event.PedidoCanceladoEvent;
+import com.peluchin.pedido_service.event.PedidoItemEvent;
+import com.peluchin.pedido_service.event.PedidoPagadoEvent;
 import com.peluchin.pedido_service.model.Pedido;
 import com.peluchin.pedido_service.model.PedidoItem;
+import com.peluchin.pedido_service.publisher.PedidoEventPublisher;
 import com.peluchin.pedido_service.repository.PedidoRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class PedidoService {
     private final PedidoRepository pedidoRepository;
     private final ProductoClient productoClient;
+    private final PedidoEventPublisher pedidoEventPublisher;
 
     public PedidoService(
             PedidoRepository pedidoRepository,
-            ProductoClient productoClient) {
+            ProductoClient productoClient,
+            PedidoEventPublisher pedidoEventPublisher) {
 
         this.pedidoRepository = pedidoRepository;
         this.productoClient = productoClient;
+        this.pedidoEventPublisher = pedidoEventPublisher;
     }
 
     public List<Pedido> getAllPedidos() {
@@ -249,8 +257,28 @@ public class PedidoService {
 
         // 3. Marcar el pedido como pagado
         carrito.setEstado(EstadoPedido.PAGADO);
+        Pedido pedidoGuardado = pedidoRepository.save(carrito);
 
-        return pedidoRepository.save(carrito);
+        // 4. Publicar evento asíncrono hacia RabbitMQ (Indicadores 2 y 3)
+        List<PedidoItemEvent> itemsEvent = pedidoGuardado.getItems().stream()
+                .map(item -> PedidoItemEvent.builder()
+                        .productoId(item.getProductoId())
+                        .nombreProducto(item.getNombreProducto())
+                        .cantidad(item.getCantidad())
+                        .precioUnitario(item.getPrecioUnitario())
+                        .build())
+                .collect(Collectors.toList());
+
+        PedidoPagadoEvent evento = PedidoPagadoEvent.builder()
+                .pedidoId(pedidoGuardado.getId())
+                .usuarioSub(pedidoGuardado.getUsuarioSub())
+                .fechaPago(LocalDateTime.now())
+                .items(itemsEvent)
+                .build();
+
+        pedidoEventPublisher.publicarPedidoPagado(evento);
+
+        return pedidoGuardado;
     }
 
     public List<Pedido> getPedidosByUsuario(String usuarioSub) {
@@ -287,8 +315,30 @@ public class PedidoService {
         }
 
         pedido.setEstado(nuevoEstado);
+        Pedido pedidoActualizado = pedidoRepository.save(pedido);
 
-        return pedidoRepository.save(pedido);
+        // Si el estado es CANCELADO, publicar evento asíncrono para restaurar stock en producto-service
+        if (nuevoEstado == EstadoPedido.CANCELADO && pedidoActualizado.getItems() != null) {
+            List<PedidoItemEvent> itemsEvent = pedidoActualizado.getItems().stream()
+                    .map(item -> PedidoItemEvent.builder()
+                            .productoId(item.getProductoId())
+                            .nombreProducto(item.getNombreProducto())
+                            .cantidad(item.getCantidad())
+                            .precioUnitario(item.getPrecioUnitario())
+                            .build())
+                    .collect(Collectors.toList());
+
+            PedidoCanceladoEvent eventoCancelado = PedidoCanceladoEvent.builder()
+                    .pedidoId(pedidoActualizado.getId())
+                    .usuarioSub(pedidoActualizado.getUsuarioSub())
+                    .fechaCancelacion(LocalDateTime.now())
+                    .items(itemsEvent)
+                    .build();
+
+            pedidoEventPublisher.publicarPedidoCancelado(eventoCancelado);
+        }
+
+        return pedidoActualizado;
     }
 
 
