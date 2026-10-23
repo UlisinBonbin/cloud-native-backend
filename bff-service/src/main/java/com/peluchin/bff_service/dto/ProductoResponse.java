@@ -13,6 +13,6 @@ public class ProductoResponse {
     private Long id;
     private String nombre;
     private BigDecimal precio;
-    private String imagenURL;
+    private String imagenUrl;
     private Integer stock;
 }
