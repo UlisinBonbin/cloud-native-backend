@@ -1,161 +1,208 @@
-version: '3.8'
-
 services:
-  # ============================================================================
-  # Broker de Mensajería: RabbitMQ con consola de gestión (Management UI)
-  # ============================================================================
+
+  # ============================================================
+  # RabbitMQ
+  # Se ejecutará en la EC2 peluchin-rabbitmq
+  # ============================================================
   rabbitmq:
     image: rabbitmq:3-management
     container_name: bonbin-rabbitmq
     restart: always
+
     ports:
-      - "5672:5672"     # Puerto AMQP para comunicación de microservicios
-      - "15672:15672"   # Consola Web de Administración (http://localhost:15672)
+      - "5672:5672"
+      # Consola de administración accesible solo desde la propia EC2.
+      - "127.0.0.1:15672:15672"
+
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME:-guest}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+
     networks:
       - bonbin-network
 
-  # ============================================================================
-  # Microservicio Administrador de RabbitMQ (Indicadores 6, 7 y 8)
-  # ============================================================================
+
+  # ============================================================
+  # Microservicio Administrador
+  # Se ejecutará en la EC2 peluchin-rabbitmq
+  # ============================================================
   admin-service:
     build:
       context: ./admin-service
       dockerfile: Dockerfile
+
     container_name: bonbin-admin-service
     restart: always
+
     ports:
       - "8084:8084"
+
     depends_on:
       rabbitmq:
         condition: service_healthy
+
     environment:
-      RABBITMQ_HOST: rabbitmq
-      RABBITMQ_PORT: 5672
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
+      RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
       RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-guest}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+
     networks:
       - bonbin-network
 
-  # ============================================================================
-  # Microservicio Catálogo y Stock (Consumidor RabbitMQ con ACK manual y DLQ)
-  # ============================================================================
+
+  # ============================================================
+  # Microservicio Productos
+  # Se ejecutará en la EC2 peluchin-microservices
+  # ============================================================
   producto-service:
     build:
       context: ./producto-service
       dockerfile: Dockerfile
+
     container_name: bonbin-producto-service
     restart: always
+
     ports:
       - "8081:8081"
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
+
     environment:
-      DB_HOST: ${DB_HOST}
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
-      COGNITO_ISSUER: ${COGNITO_ISSUER}
-      API_AUDIENCE: ${API_AUDIENCE}
-      RABBITMQ_HOST: rabbitmq
-      RABBITMQ_PORT: 5672
+      DB_HOST: ${DB_HOST:-}
+      DB_USERNAME: ${DB_USERNAME:-}
+      DB_PASSWORD: ${DB_PASSWORD:-}
+
+      COGNITO_ISSUER: ${COGNITO_ISSUER:-}
+      API_AUDIENCE: ${API_AUDIENCE:-}
+
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
+      RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
       RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-guest}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+
     networks:
       - bonbin-network
 
-  # ============================================================================
-  # Microservicio Usuarios y Perfiles
-  # ============================================================================
+
+  # ============================================================
+  # Microservicio Usuarios
+  # Se ejecutará en la EC2 peluchin-bff
+  # ============================================================
   usuario-service:
     build:
       context: ./usuario-service
       dockerfile: Dockerfile
+
     container_name: bonbin-usuario-service
     restart: always
-    ports:
-      - "8082:8082"
+
+    # No necesita exponerse directamente hacia Internet.
+    # El BFF podrá comunicarse con él dentro de la red Docker.
+    expose:
+      - "8082"
+
     environment:
-      DB_HOST: ${DB_HOST}
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
-      COGNITO_ISSUER: ${COGNITO_ISSUER}
-      API_AUDIENCE: ${API_AUDIENCE}
-      RABBITMQ_HOST: rabbitmq
-      RABBITMQ_PORT: 5672
-      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-guest}
-      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      DB_HOST: ${DB_HOST:-}
+      DB_USERNAME: ${DB_USERNAME:-}
+      DB_PASSWORD: ${DB_PASSWORD:-}
+
+      COGNITO_ISSUER: ${COGNITO_ISSUER:-}
+      API_AUDIENCE: ${API_AUDIENCE:-}
+
     networks:
       - bonbin-network
 
-  # ============================================================================
-  # Microservicio Pedidos y Carrito (Productor de eventos RabbitMQ)
-  # ============================================================================
+
+  # ============================================================
+  # Microservicio Pedidos
+  # Se ejecutará en la EC2 peluchin-microservices
+  # ============================================================
   pedido-service:
     build:
       context: ./pedido-service
       dockerfile: Dockerfile
+
     container_name: bonbin-pedido-service
     restart: always
+
     ports:
       - "8083:8083"
+
+    # producto-service está en la misma EC2 y red Docker.
     depends_on:
-      rabbitmq:
-        condition: service_healthy
       producto-service:
         condition: service_started
+
     environment:
-      DB_HOST: ${DB_HOST}
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
-      PRODUCTO_SERVICE_URL: http://producto-service:8081
-      COGNITO_ISSUER: ${COGNITO_ISSUER}
-      RABBITMQ_HOST: rabbitmq
-      RABBITMQ_PORT: 5672
+      DB_HOST: ${DB_HOST:-}
+      DB_USERNAME: ${DB_USERNAME:-}
+      DB_PASSWORD: ${DB_PASSWORD:-}
+
+      PRODUCTO_SERVICE_URL: ${PRODUCTO_SERVICE_URL:-http://producto-service:8081}
+
+      COGNITO_ISSUER: ${COGNITO_ISSUER:-}
+
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
+      RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
       RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-guest}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+
     networks:
       - bonbin-network
 
-  # ============================================================================
+
+  # ============================================================
   # BFF (Backend for Frontend)
-  # ============================================================================
+  # Se ejecutará en la EC2 peluchin-bff
+  # ============================================================
   bff-service:
     build:
       context: ./bff-service
       dockerfile: Dockerfile
+
     container_name: bonbin-bff-service
     restart: always
+
     ports:
       - "8080:8080"
-    depends_on:
-      - producto-service
-      - usuario-service
-      - pedido-service
-      - admin-service
+
+    # Las URL se definirán en el .env de esta EC2.
+    # No usamos depends_on porque varios servicios están
+    # en otras máquinas EC2.
+
     environment:
-      PRODUCTO_SERVICE_URL: http://producto-service:8081
-      USUARIO_SERVICE_URL: http://usuario-service:8082
-      PEDIDO_SERVICE_URL: http://pedido-service:8083
-      ADMIN_SERVICE_URL: http://admin-service:8084
-      COGNITO_ISSUER: ${COGNITO_ISSUER}
-      API_AUDIENCE: ${API_AUDIENCE}
+      PRODUCTO_SERVICE_URL: ${PRODUCTO_SERVICE_URL:-http://producto-service:8081}
+      USUARIO_SERVICE_URL: ${USUARIO_SERVICE_URL:-http://usuario-service:8082}
+      PEDIDO_SERVICE_URL: ${PEDIDO_SERVICE_URL:-http://pedido-service:8083}
+      ADMIN_SERVICE_URL: ${ADMIN_SERVICE_URL:-http://admin-service:8084}
+
+      COGNITO_ISSUER: ${COGNITO_ISSUER:-}
+      API_AUDIENCE: ${API_AUDIENCE:-}
+
     networks:
       - bonbin-network
 
+
+# ============================================================
+# Volúmenes
+# ============================================================
 volumes:
   rabbitmq_data:
     driver: local
 
+
+# ============================================================
+# Red Docker local
+# Esta red existe únicamente dentro de cada EC2.
+# ============================================================
 networks:
   bonbin-network:
     driver: bridge
