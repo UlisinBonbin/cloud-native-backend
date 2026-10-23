@@ -25,7 +25,7 @@ spring:
     password: ${RABBITMQ_PASSWORD:guest}
 
 cognito:
-  userinfo-uri: https://us-east-1f7srefcco.auth.us-east-1.amazoncognito.com/oauth2/userInfo
+  userinfo-uri: https://us-east-1cyjay1pib.auth.us-east-1.amazoncognito.com/oauth2/userInfo
 
 # ==============================================================================
 # INDICADOR 1: Configuración centralizada de RabbitMQ para Peluchitos Bonbin
