@@ -3,7 +3,7 @@
   <component name="CompilerConfiguration">
     <annotationProcessing>
       <profile default="true" name="Default" enabled="true" />
-      <profile name="Annotation profile for admin-service" enabled="true">
+      <profile name="Annotation profile for usuario-service" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
@@ -13,8 +13,8 @@
         <module name="usuario-service" />
         <module name="producto-service" />
         <module name="pedido-service" />
-        <module name="admin-service" />
         <module name="bff-service" />
+        <module name="admin-service" />
       </profile>
     </annotationProcessing>
   </component>

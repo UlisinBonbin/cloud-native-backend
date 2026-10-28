@@ -245,15 +245,6 @@ public class PedidoService {
             }
         }
 
-        // 2. Descontar stock
-        for (PedidoItem item : carrito.getItems()) {
-
-            productoClient.descontarStock(
-                    item.getProductoId(),
-                    item.getCantidad(),
-                    token
-            );
-        }
 
         // 3. Marcar el pedido como pagado
         carrito.setEstado(EstadoPedido.PAGADO);
