@@ -389,12 +389,44 @@ La lógica está encapsulada en `RabbitAdminService` y los endpoints cuentan con
 
 ---
 
+## ⚡ Event Streaming (Apache Kafka)
+
+El backend incorpora una arquitectura híbrida donde **Apache Kafka** convive con RabbitMQ para el procesamiento y streaming de eventos en tiempo real:
+
+### 1. Tópicos de Negocio y Parámetros Avanzados (Indicadores 1, 2 y 7)
+Los tópicos se crean con particiones y políticas de retención optimizadas:
+- **`pedido.pagado.topic`**: 3 particiones, factor de replicación 1 (configurable), retención de 7 días (`retention.ms: 604800000`), `cleanup.policy: delete`.
+- **`pedido.cancelado.topic`**: 3 particiones, factor de replicación 1, retención de 7 días, `cleanup.policy: delete`.
+- **Dead Letter Topics (DLT)**: `pedido.pagado.topic.DLT` y `pedido.cancelado.topic.DLT` para captura de eventos con fallo irrecuperable.
+
+### 2. Productores Tipados (Indicadores 2 y 4)
+- En `pedido-service`: `PedidoKafkaProducer` utiliza `KafkaTemplate<String, Object>` con `StringSerializer` para llaves y `JsonSerializer` para valores DTO (`PedidoPagadoEvent`, `PedidoCanceladoEvent`).
+- La clave de partición es `pedidoId` para garantizar orden estricto dentro de la partición.
+
+### 3. Consumidores y Manejo Resiliente de Errores (Indicadores 5, 6 y 8)
+- En `producto-service`: `InventarioKafkaConsumer` utiliza `@KafkaListener` con el consumer group `inventario-group` y `AckMode.MANUAL_IMMEDIATE`.
+- **Control de Reintentos y DLT (Indicador 6)**: Configurado con `DefaultErrorHandler`, realiza 3 reintentos espaciados por 1 segundo (`FixedBackOff`). Si los reintentos se agotan, `DeadLetterPublishingRecoverer` desvía el mensaje al tópico DLT correspondiente.
+- **Auditoría DLT**: `InventarioKafkaDltConsumer` escucha los tópicos `.DLT` y audita el fallo con logs estructurados sin interrumpir el flujo.
+
+### 4. Administración de Kafka vía API REST (`admin-service` — :8084) (Indicadores 3 y 9)
+Operaciones implementadas con `AdminClient` de Apache Kafka:
+- `POST /kafka/topics`: Crear tópicos con particiones, réplicas y políticas de retención.
+- `GET /kafka/topics`: Listar todos los tópicos del clúster.
+- `GET /kafka/topics/{nombre}`: Consultar detalle (particiones, réplicas, configuraciones de retención).
+- `PUT /kafka/topics/{nombre}`: Incrementar particiones o modificar retención y cleanup policy.
+- `DELETE /kafka/topics/{nombre}`: Eliminar tópico.
+- `GET /kafka/consumer-groups`: Listar Consumer Groups activos.
+- `GET /kafka/consumer-groups/{groupId}`: Inspeccionar estado, miembros, offsets y cálculo de **LAG** (retraso).
+
+---
+
 ## 🐳 Docker y Docker Compose
 
 El proyecto cuenta con contenedorización completa para desarrollo local y despliegues en AWS EC2:
 
 ### Estructura de archivos Docker
-- **`docker-compose.yml`**: A nivel de raíz, orquesta RabbitMQ y todos los microservicios.
+- **`docker-compose.yml`**: A nivel de raíz, orquesta el clúster de RabbitMQ (2 nodos) y todos los microservicios.
+- **`docker-compose-kafka.yml`**: Orquesta la infraestructura de **Apache Kafka**, **Zookeeper** y la consola **Kafka-UI** (puerto `8085`).
 - **`Dockerfile`**: Ubicado dentro de cada microservicio (`bff-service`, `producto-service`, `pedido-service`, `usuario-service`, `admin-service`), con compilación multi-stage basada en `eclipse-temurin:21` y ejecución con usuario no-root por seguridad.
 
 ### Opciones de ejecución con Docker

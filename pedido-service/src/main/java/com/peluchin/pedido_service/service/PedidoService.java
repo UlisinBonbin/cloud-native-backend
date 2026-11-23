@@ -10,6 +10,7 @@ import com.peluchin.pedido_service.event.PedidoPagadoEvent;
 import com.peluchin.pedido_service.model.Pedido;
 import com.peluchin.pedido_service.model.PedidoItem;
 import com.peluchin.pedido_service.publisher.PedidoEventPublisher;
+import com.peluchin.pedido_service.publisher.PedidoKafkaProducer;
 import com.peluchin.pedido_service.repository.PedidoRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
@@ -23,15 +24,18 @@ public class PedidoService {
     private final PedidoRepository pedidoRepository;
     private final ProductoClient productoClient;
     private final PedidoEventPublisher pedidoEventPublisher;
+    private final PedidoKafkaProducer pedidoKafkaProducer;
 
     public PedidoService(
             PedidoRepository pedidoRepository,
             ProductoClient productoClient,
-            PedidoEventPublisher pedidoEventPublisher) {
+            PedidoEventPublisher pedidoEventPublisher,
+            PedidoKafkaProducer pedidoKafkaProducer) {
 
         this.pedidoRepository = pedidoRepository;
         this.productoClient = productoClient;
         this.pedidoEventPublisher = pedidoEventPublisher;
+        this.pedidoKafkaProducer = pedidoKafkaProducer;
     }
 
     public List<Pedido> getAllPedidos() {
@@ -267,7 +271,9 @@ public class PedidoService {
                 .items(itemsEvent)
                 .build();
 
+        // Publicar evento hacia RabbitMQ y Apache Kafka (coexistencia de mensajería)
         pedidoEventPublisher.publicarPedidoPagado(evento);
+        pedidoKafkaProducer.enviarPedidoPagado(evento);
 
         return pedidoGuardado;
     }
@@ -326,7 +332,9 @@ public class PedidoService {
                     .items(itemsEvent)
                     .build();
 
+            // Publicar evento de cancelación hacia RabbitMQ y Apache Kafka
             pedidoEventPublisher.publicarPedidoCancelado(eventoCancelado);
+            pedidoKafkaProducer.enviarPedidoCancelado(eventoCancelado);
         }
 
         return pedidoActualizado;

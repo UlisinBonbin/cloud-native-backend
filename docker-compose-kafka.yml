@@ -1,0 +1,89 @@
+version: '3.8'
+
+# ==============================================================================
+# INFRAESTRUCTURA DE APACHE KAFKA CON ZOOKEEPER Y KAFKA-UI (PELUCHITOS BONBIN)
+#
+# Cumple con:
+# - Indicador 1: Brokers accesibles para microservicios.
+# - Requerimiento: Arquitectura Kafka con Zookeeper y brokers.
+# - Requerimiento: Kafka-UI para administración visual de brokers, tópicos y grupos.
+# ==============================================================================
+
+services:
+
+  # ----------------------------------------------------------------------------
+  # ZOOKEEPER: Coordinador distribuido para brokers de Kafka
+  # ----------------------------------------------------------------------------
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: bonbin-zookeeper
+    restart: always
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_log:/var/lib/zookeeper/log
+    networks:
+      - bonbin-network
+
+  # ----------------------------------------------------------------------------
+  # BROKER KAFKA 1: Motor de eventos y streaming distribuido
+  # ----------------------------------------------------------------------------
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: bonbin-kafka
+    hostname: kafka
+    restart: always
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"     # Acceso para host externo o desarrollo local
+      - "29092:29092"   # Acceso interno dentro de la red Docker
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://${KAFKA_ADVERTISED_HOST:-localhost}:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - bonbin-network
+
+  # ----------------------------------------------------------------------------
+  # KAFKA-UI: Consola web gráfica para administrar brokers, tópicos y consumer groups
+  # Accesible en: http://<IP>:8085
+  # ----------------------------------------------------------------------------
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: bonbin-kafka-ui
+    restart: always
+    depends_on:
+      - kafka
+    ports:
+      - "8085:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: bonbin-kafka-cluster
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    networks:
+      - bonbin-network
+
+volumes:
+  zookeeper_data:
+    driver: local
+  zookeeper_log:
+    driver: local
+  kafka_data:
+    driver: local
+
+networks:
+  bonbin-network:
+    name: bonbin-network

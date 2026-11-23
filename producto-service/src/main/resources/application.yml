@@ -26,6 +26,26 @@ spring:
     listener:
       simple:
         acknowledge-mode: manual # Indicador 5: Modo manual para gestión explícita de ACK / NACK
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: inventario-group # Indicador 8: Consumer group para balanceo y resiliencia
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+    listener:
+      ack-mode: manual_immediate
+
+# ==============================================================================
+# CONFIGURACIÓN CENTRALIZADA DE TÓPICOS KAFKA (Indicadores 1, 2 y 8)
+# ==============================================================================
+kafka:
+  topics:
+    pedido-pagado: pedido.pagado.topic
+    pedido-cancelado: pedido.cancelado.topic
 
 # ==============================================================================
 # INDICADOR 1: Configuración centralizada de RabbitMQ para Peluchitos Bonbin

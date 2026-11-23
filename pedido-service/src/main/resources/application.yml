@@ -25,6 +25,27 @@ spring:
     listener:
       simple:
         acknowledge-mode: manual
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+      properties:
+        spring.json.add.type.headers: true
+
+# ==============================================================================
+# CONFIGURACIÓN CENTRALIZADA DE TÓPICOS KAFKA (Indicadores 1, 2 y 7)
+# ==============================================================================
+kafka:
+  topics:
+    pedido-pagado: pedido.pagado.topic
+    pedido-cancelado: pedido.cancelado.topic
+    partitions: 3
+    replication-factor: 1
+    retention-ms: 604800000 # 7 días de retención
+    cleanup-policy: delete
 
 producto-service:
   url: ${PRODUCTO_SERVICE_URL:http://localhost:8081}

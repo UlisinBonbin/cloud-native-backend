@@ -2,3 +2,26 @@
 .env
 .env.*
 !.env.example
+
+# Build y dependencias
+**/target/
+target/
+build/
+*.class
+*.jar
+*.war
+
+# IDEs
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.settings/
+.classpath
+.project
+
+# Logs y SO
+*.log
+.DS_Store
+Thumbs.db
